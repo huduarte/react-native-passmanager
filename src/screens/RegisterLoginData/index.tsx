@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useForm } from 'react-hook-form';
 import { RFValue } from 'react-native-responsive-fontsize';
 import * as Yup from 'yup';
@@ -36,7 +36,9 @@ export function RegisterLoginData() {
     formState: {
       errors
     }
-  } = useForm();
+  } = useForm({
+    resolver: yupResolver(schema)
+  });
 
   async function handleRegister(formData: FormData) {
     const newLoginData = {
@@ -44,7 +46,24 @@ export function RegisterLoginData() {
       ...formData
     }
 
-    // Save data on AsyncStorage
+
+    try {
+      const dataKey = `@passmanager:logins`;
+      const data = await AsyncStorage.getItem(dataKey);
+      const currentData = data ? JSON.parse(data) : [];
+      
+      const dataFormatted = [
+        ...currentData,
+        newLoginData
+      ]
+
+      await AsyncStorage.setItem(dataKey, JSON.stringify(dataFormatted));
+
+      reset();
+
+    } catch {
+      Alert.alert('Não foi possível cadastrar sua senha', 'Por favor, tente novamente.')
+    }
   }
 
   return (
@@ -53,53 +72,59 @@ export function RegisterLoginData() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       enabled
     >
-      <Container>
-        <HeaderTitle>Salve o login de algum serviço!</HeaderTitle>
+      <ScrollView
+          keyboardShouldPersistTaps="handled"
+          style={{backgroundColor: "#fff"}}
+          showsVerticalScrollIndicator={false}
+      >
+        <Container>
+          <HeaderTitle>Salve o login de algum serviço!</HeaderTitle>
 
-        <Form>
-          <Input
-            title="Título"
-            name="title"
-            error={
-              // message error here
-            }
-            control={control}
-            placeholder="Escreva o título aqui"
-            autoCapitalize="sentences"
-            autoCorrect
-          />
-          <Input
-            title="Email"
-            name="email"
-            error={
-              // message error here
-            }
-            control={control}
-            placeholder="Escreva o Email aqui"
-            autoCorrect={false}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
-          <Input
-            title="Senha"
-            name="password"
-            error={
-              // message error here
-            }
-            control={control}
-            secureTextEntry
-            placeholder="Escreva a senha aqui"
-          />
+          <Form>
+            <Input
+              title="Título"
+              name="title"
+              error={
+                errors.title && errors.title.message
+              }
+              control={control}
+              placeholder="Escreva o título aqui"
+              autoCapitalize="sentences"
+              autoCorrect
+            />
+            <Input
+              title="Email"
+              name="email"
+              error={
+                errors.email && errors.email.message
+              }
+              control={control}
+              placeholder="Escreva o Email aqui"
+              autoCorrect={false}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+            <Input
+              title="Senha"
+              name="password"
+              error={
+                errors.password && errors.password.message
+              }
+              control={control}
+              secureTextEntry
+              placeholder="Escreva a senha aqui"
+            />
 
-          <Button
-            style={{
-              marginTop: RFValue(26)
-            }}
-            title="Salvar"
-            onPress={handleSubmit(handleRegister)}
-          />
-        </Form>
-      </Container>
+            <Button
+              style={{
+                marginTop: RFValue(26)
+              }}
+              title="Salvar"
+              onPress={handleSubmit(handleRegister)}
+            />
+          </Form>
+        </Container>
+      </ScrollView>
     </KeyboardAvoidingView>
   )
 }
